@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>ULTRABLOCK: OMNIVERSE</title>
+<style>
+body{
+    margin:0;
+    background:black;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    height:100vh;
+    font-family:monospace;
+}
+canvas{
+    background:#0b0b0b;
+    border:4px solid #ff0044;
+    box-shadow:0 0 40px #ff0044;
+}
+</style>
+</head>
+<body>
+
+<canvas id="game" width="400" height="600"></canvas>
+
+<script>
+/* ================= ENGINE ================= */
+const c = document.getElementById("game");
+const ctx = c.getContext("2d");
+
+let keys = {};
+let frame = 0;
+let state = "platformer";
+/*
+platformer → rain → lasers → arena → boss → win / dead
+*/
+
+let flash = 0;
+
+/* ================= PLAYER ================= */
+const player = {
+    x:190,y:520,w:20,h:20,
+    vx:0,vy:0,
+    speed:5,
+    gravity:0.6,
+    jump:12,
+    onGround:false,
+    soul:"red", // red, blue, white
+    reset(x=190,y=520){
+        this.x=x; this.y=y;
+        this.vx=0; this.vy=0;
+    },
+    update(){
+        if(keys.ArrowLeft) this.vx=-this.speed;
+        else if(keys.ArrowRight) this.vx=this.speed;
+        else this.vx=0;
+
+        if(this.soul!=="blue"){
+            if(keys.ArrowUp && this.onGround){
+                this.vy=-this.jump;
+                this.onGround=false;
+            }
+        }
+
+        if(this.soul==="blue"){
+            this.vy+=this.gravity*1.5;
+        } else {
+            this.vy+=this.gravity;
+        }
+
+        this.x+=this.vx;
+        this.y+=this.vy;
+
+        this.x=Math.max(0,Math.min(c.width-this.w,this.x));
+        if(this.y>c.height) state="dead";
+    },
+    draw(){
+        ctx.fillStyle=this.soul;
+        ctx.shadowBlur=15;
+        ctx.shadowColor=this.soul;
+        ctx.fillRect(this.x,this.y,this.w,this.h);
+        ctx.shadowBlur=0;
+    }
+};
+
+/* ================= PLATFORMS ================= */
+const platforms=[
+    {x:40,y:470,w:120,h:10},
+    {x:240,y:380,w:120,h:10},
+    {x:60,y:290,w:120,h:10},
+    {x:220,y:200,w:120,h:10}
+];
+
+function platformPhysics(){
+    player.onGround=false;
+    platforms.forEach(p=>{
+        if(player.x+player.w>p.x &&
+           player.x<p.x+p.w &&
+           player.y+player.h>p.y &&
+           player.y+player.h<p.y+12 &&
+           player.vy>=0){
+            player.y=p.y-player.h;
+            player.vy=0;
+            player.onGround=true;
+        }
+    });
+}
+
+/* ================= BLOCK RAIN ================= */
+let blocks=[];
+let rainTimer=0;
+
+function spawnBlock(){
+    blocks.push({
+        x:Math.random()*380,
+        y:-20,
+        size:20,
+        speed:4+rainTimer*0.015
+    });
+}
+
+/* ================= LASERS ================= */
+let lasers=[];
+let laserTimer=0;
+
+function spawnLaser(){
+    lasers.push({
+        x:Math.random()*350,
+        w:40,
+        warn:45,
+        fire:25
+    });
+}
+
+/* ================= BOSS ================= */
+let bossPhase=0;
+let bossTimer=0;
+let bullets=[];
+
+function spawnBullet(x,y,vx,vy,size=8){
+    bullets.push({x,y,vx,vy,size});
+}
+
+/* ================= COLLISION ================= */
+function hit(b){
+    return (
+        player.x < b.x + b.size &&
+        player.x + player.w > b.x &&
+        player.y < b.y + b.size &&
+        player.y + player.h > b.y
+    );
+}
+
+/* ================= UPDATE ================= */
+function update(){
+    if(state==="dead"||state==="win") return;
+
+    player.update();
+    if(state==="platformer"||state==="rain") platformPhysics();
+
+    /* PLATFORMER */
+    if(state==="platformer"){
+        if(player.y<120){
+            state="rain";
+            flash=15;
+            player.reset();
+        }
+    }
+
+    /* BLOCK RAIN */
+    if(state==="rain"){
+        rainTimer++;
+        if(frame%25===0) spawnBlock();
+
+        for(let i=blocks.length-1;i>=0;i--){
+            let b=blocks[i];
+            b.y+=b.speed;
+            if(hit(b)) state="dead";
+            if(b.y>600) blocks.splice(i,1);
+        }
+
+        if(rainTimer>700){
+            state="lasers";
+            blocks=[];
+            flash=15;
+            player.reset();
+        }
+    }
+
+    /* LASER HELL */
+    if(state==="lasers"){
+        laserTimer++;
+        if(frame%80===0) spawnLaser();
+
+        for(let i=lasers.length-1;i>=0;i--){
+            let l=lasers[i];
+            l.warn--;
+            if(l.warn<=0){
+                l.fire--;
+                if(player.x<l.x+l.w && player.x+player.w>l.x)
+                    state="dead";
+            }
+            if(l.fire<=0) lasers.splice(i,1);
+        }
+
+        if(laserTimer>700){
+            state="arena";
+            lasers=[];
+            flash=20;
+            player.reset(190,450);
+        }
+    }
+
+    /* ARENA TRANSITION */
+    if(state==="arena"){
+        bossTimer++;
+        if(bossTimer>120){
+            bossTimer=0;
+            bossPhase=0;
+            player.soul="red";
+            state="boss";
+        }
+    }
+
+    /* BOSS */
+    if(state==="boss"){
+        bossTimer++;
+
+        if(bossPhase===0 && frame%30===0)
+            spawnBullet(Math.random()*400,-10,0,4);
+
+        if(bossPhase===1 && frame%20===0)
+            spawnBullet(Math.random()*400,-10,(Math.random()-0.5)*3,6);
+
+        if(bossPhase===2 && frame%12===0)
+            spawnBullet(Math.random()*400,Math.random()*600,
+                        (Math.random()-0.5)*4,(Math.random()-0.5)*4);
+
+        bullets.forEach(b=>{
+            b.x+=b.vx; b.y+=b.vy;
+            if(hit(b)) state="dead";
+        });
+
+        bullets=bullets.filter(b=>b.x>-50&&b.x<450&&b.y>-50&&b.y<650);
+
+        if(bossTimer>450){
+            bossPhase++;
+            bossTimer=0;
+            bullets=[];
+            player.soul=["red","blue","white"][bossPhase]||"white";
+            flash=15;
+            if(bossPhase>2) state="win";
+        }
+    }
+
+    frame++;
+}
+
+/* ================= DRAW ================= */
+function draw(){
+    ctx.clearRect(0,0,400,600);
+
+    platforms.forEach(p=>{
+        ctx.fillStyle="#333";
+        ctx.fillRect(p.x,p.y,p.w,p.h);
+    });
+
+    blocks.forEach(b=>{
+        ctx.fillStyle="red";
+        ctx.fillRect(b.x,b.y,b.size,b.size);
+    });
+
+    lasers.forEach(l=>{
+        if(l.warn>0){
+            ctx.strokeStyle="rgba(255,0,0,0.6)";
+            ctx.strokeRect(l.x,0,l.w,600);
+        }else{
+            ctx.fillStyle="white";
+            ctx.fillRect(l.x,0,l.w,600);
+        }
+    });
+
+    bullets.forEach(b=>{
+        ctx.fillStyle="white";
+        ctx.fillRect(b.x,b.y,b.size,b.size);
+    });
+
+    player.draw();
+
+    if(flash>0){
+        ctx.fillStyle="rgba(255,255,255,0.15)";
+        ctx.fillRect(0,0,400,600);
+        flash--;
+    }
+
+    ctx.fillStyle="white";
+    ctx.fillText(state.toUpperCase(),10,20);
+
+    if(state==="dead"||state==="win"){
+        ctx.fillStyle="rgba(0,0,0,0.7)";
+        ctx.fillRect(0,0,400,600);
+        ctx.fillStyle="white";
+        ctx.textAlign="center";
+        ctx.font="28px monospace";
+        ctx.fillText(
+            state==="win"?"YOU DETERMINED FATE":"YOU DIED",
+            200,300
+        );
+        ctx.font="16px monospace";
+        ctx.fillText("Refresh to Restart",200,340);
+    }
+}
+
+/* ================= LOOP ================= */
+function loop(){
+    update();
+    draw();
+    requestAnimationFrame(loop);
+}
+
+addEventListener("keydown",e=>keys[e.key]=true);
+addEventListener("keyup",e=>keys[e.key]=false);
+
+loop();
+</script>
+</body>
+</html>
