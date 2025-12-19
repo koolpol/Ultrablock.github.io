@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ULTRABLOCK: HELLSCAPE EDITION</title>
+    <style>
+        body { margin: 0; background: #050505; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'Courier New', monospace; color: white; overflow: hidden; }
+        .game-container { position: relative; }
+        canvas { background: #000; border: 4px solid #ff0000; box-shadow: 0 0 50px #ff0000; }
+        #ui { position: absolute; top: 10px; left: 10px; pointer-events: none; }
+        #game-over-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 0, 0, 0.2); backdrop-filter: blur(8px);
+            display: none; flex-direction: column; justify-content: center; align-items: center; text-align: center;
+        }
+        h1 { color: #ff0000; font-size: 4em; text-shadow: 0 0 20px black; margin: 0; }
+        button { margin-top: 20px; padding: 15px 30px; font-size: 1.2em; cursor: pointer; background: #000; color: #ff0000; border: 2px solid #ff0000; font-weight: bold; }
+        button:hover { background: #ff0000; color: #000; }
+    </style>
+</head>
+<body>
+<div class="game-container">
+    <div id="ui">SCORE: <span id="scoreText">0</span></div>
+    <canvas id="game" width="400" height="600"></canvas>
+    <div id="game-over-screen">
+        <h1 id="deathMsg">TERMINATED</h1>
+        <p id="finalScoreText">Final Score: 0</p>
+        <button onclick="restartGame()">REBOOT SYSTEM</button>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+    const gameOverScreen = document.getElementById("game-over-screen");
+    
+    let player, platforms, fallingBlocks, lasers, score, frame, gameOver;
+    let keys = {};
+
+    window.addEventListener("keydown", e => keys[e.code] = true);
+    window.addEventListener("keyup", e => keys[e.code] = false);
+
+    function init() {
+        player = { x: 200, y: 500, w: 20, h: 20, vx: 0, vy: 0, speed: 5, jump: -12, grounded: false };
+        platforms = [{ x: 0, y: 580, w: 400, h: 20 }];
+        fallingBlocks = [];
+        lasers = [];
+        score = 0;
+        frame = 0;
+        gameOver = false;
+        gameOverScreen.style.display = "none";
+        loop();
+    }
+
+    function spawnHazards() {
+        // Spawn Falling Deadly Blocks
+        if (frame % Math.max(10, 60 - Math.floor(score/10)) === 0) {
+            fallingBlocks.push({
+                x: Math.random() * (canvas.width - 30),
+                y: -50,
+                w: 30,
+                h: 30,
+                speed: 4 + (score / 50)
+            });
+        }
+
+        // Spawn Sweeping Lasers
+        if (frame % 200 === 0 && frame > 0) {
+            const isHorizontal = Math.random() > 0.5;
+            lasers.push({
+                x: isHorizontal ? 0 : Math.random() * canvas.width,
+                y: isHorizontal ? Math.random() * canvas.height : 0,
+                w: isHorizontal ? canvas.width : 4,
+                h: isHorizontal ? 4 : canvas.height,
+                life: 120, // frames to exist
+                warning: 60 // frames of warning
+            });
+        }
+
+        // Random Platforms
+        if (frame % 100 === 0) {
+            platforms.push({ x: Math.random() * 300, y: -20, w: 100, h: 10, speed: 2 });
+        }
+    }
+
+    function update() {
+        if (gameOver) return;
+
+        // Player movement
+        if (keys["ArrowLeft"] || keys["KeyA"]) player.vx = -player.speed;
+        else if (keys["ArrowRight"] || keys["KeyD"]) player.vx = player.speed;
+        else player.vx *= 0.8;
+
+        player.vy += 0.6; // Gravity
+        player.x += player.vx;
+        player.y += player.vy;
+
+        // Collision: Platforms
+        player.grounded = false;
+        platforms.forEach(p => {
+            p.y += 1; // Platforms move down
+            if (player.x < p.x + p.w && player.x + player.w > p.x &&
+                player.y + player.h > p.y && player.y + player.h < p.y + p.h + player.vy) {
+                player.y = p.y - player.h;
+                player.vy = 0;
+                player.grounded = true;
+            }
+        });
+
+        if (player.grounded && (keys["Space"] || keys["ArrowUp"] || keys["KeyW"])) {
+            player.vy = player.jump;
+        }
+
+        // Update Falling Blocks
+        fallingBlocks.forEach((b, i) => {
+            b.y += b.speed;
+            // Collision detection
+            if (player.x < b.x + b.w && player.x + player.w > b.x &&
+                player.y < b.y + b.h && player.y + player.h > b.y) {
+                endGame("CRUSHED BY BLOCK");
+            }
+            if (b.y > canvas.height) fallingBlocks.splice(i, 1);
+        });
+
+        // Update Lasers
+        lasers.forEach((l, i) => {
+            l.life--;
+            if (l.warning <= 0) {
+                // Collision detection with active laser
+                if (player.x < l.x + l.w && player.x + player.w > l.x &&
+                    player.y < l.y + l.h && player.y + player.h > l.y) {
+                    endGame("VAPORIZED BY LASER");
+                }
+            }
+            if (l.life <= 0) lasers.splice(i, 1);
+        });
+
+        // Bounds / Death conditions
+        if (player.y > canvas.height) endGame("FELL INTO THE ABYSS");
+        if (player.x < 0) player.x = 0;
+        if (player.x > canvas.width - player.w) player.x = canvas.width - player.w;
+
+        score++;
+        document.getElementById("scoreText").innerText = Math.floor(score/10);
+        frame++;
+        spawnHazards();
+    }
+
+    function draw() {
+        ctx.fillStyle = "black";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Draw Platforms
+        ctx.fillStyle = "#444";
+        platforms.forEach(p => ctx.fillRect(p.x, p.y, p.w, p.h));
+
+        // Draw Player
+        ctx.fillStyle = "#00ff00";
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = "#00ff00";
+        ctx.fillRect(player.x, player.y, player.w, player.h);
+        ctx.shadowBlur = 0;
+
+        // Draw Falling Blocks
+        ctx.fillStyle = "#ff00ff";
+        fallingBlocks.forEach(b => {
+            ctx.fillRect(b.x, b.y, b.w, b.h);
+            ctx.strokeStyle = "white";
+            ctx.strokeRect(b.x+5, b.y+5, b.w-10, b.h-10);
+        });
+
+        // Draw Lasers
+        lasers.forEach(l => {
+            if (l.warning > 0) {
+                ctx.globalAlpha = 0.3;
+                ctx.fillStyle = "white"; // Warning line
+                ctx.fillRect(l.x, l.y, l.w, l.h);
+                ctx.globalAlpha = 1.0;
+            } else {
+                ctx.fillStyle = "#ff0000";
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = "red";
+                ctx.fillRect(l.x, l.y, l.w, l.h);
+                ctx.shadowBlur = 0;
+            }
+        });
+    }
+
+    function loop() {
+        update();
+        draw();
+        if (!gameOver) requestAnimationFrame(loop);
+    }
+
+    function endGame(msg) {
+        gameOver = true;
+        document.getElementById("deathMsg").innerText = msg;
+        document.getElementById("finalScoreText").innerText = "Survival Points: " + Math.floor(score/10);
+        gameOverScreen.style.display = "flex";
+    }
+
+    function restartGame() {
+        init();
+    }
+
+    init();
+</script>
+</body>
+</html>
