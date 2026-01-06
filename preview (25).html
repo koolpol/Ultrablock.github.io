@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>The Hardest JS Game</title>
+    <style>
+        body { margin: 0; background: #111; display: flex; justify-content: center; align-items: center; height: 100vh; color: white; font-family: sans-serif; overflow: hidden; }
+        canvas { border: 4px solid #fff; background: #000; box-shadow: 0 0 20px rgba(255,255,255,0.2); }
+        #ui { position: absolute; top: 20px; text-align: center; pointer-events: none; }
+    </style>
+</head>
+<body>
+    <div id="ui">
+        <h1>DEATHS: <span id="deathCount">0</span></h1>
+        <p>Use Arrow Keys to survive. Good luck.</p>
+    </div>
+    <canvas id="gameCanvas" width="800" height="400"></canvas>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const deathDisplay = document.getElementById('deathCount');
+
+let deaths = 0;
+const player = { x: 50, y: 200, size: 15, speed: 4, vx: 0, vy: 0 };
+const goal = { x: 730, y: 150, width: 50, height: 100 };
+const obstacles = [];
+
+// Create high-speed oscillating enemies
+for(let i = 0; i < 15; i++) {
+    obstacles.push({
+        x: 150 + (i * 40),
+        y: Math.random() * 400,
+        size: 8,
+        speed: 7 + Math.random() * 5, // Extremely fast
+        dir: 1
+    });
+}
+
+const keys = {};
+window.addEventListener('keydown', e => keys[e.code] = true);
+window.addEventListener('keyup', e => keys[e.code] = false);
+
+function update() {
+    // Movement with slight inertia for difficulty
+    if (keys['ArrowUp']) player.vy -= 0.5;
+    if (keys['ArrowDown']) player.vy += 0.5;
+    if (keys['ArrowLeft']) player.vx -= 0.5;
+    if (keys['ArrowRight']) player.vx += 0.5;
+
+    player.x += player.vx;
+    player.y += player.vy;
+    player.vx *= 0.9; // Friction
+    player.vy *= 0.9;
+
+    // Boundary Check
+    if (player.x < 0 || player.x > canvas.width || player.y < 0 || player.y > canvas.height) reset();
+
+    // Update Obstacles
+    obstacles.forEach(obs => {
+        obs.y += obs.speed * obs.dir;
+        if (obs.y > canvas.height || obs.y < 0) obs.dir *= -1;
+
+        // Collision Detection (Circle vs Square)
+        let dx = Math.abs(obs.x - player.x - player.size/2);
+        let dy = Math.abs(obs.y - player.y - player.size/2);
+        if (dx < (player.size/2 + obs.size) && dy < (player.size/2 + obs.size)) reset();
+    });
+
+    // Win Condition
+    if (player.x > goal.x && player.y > goal.y && player.y < goal.y + goal.height) {
+        alert("Impossible... You won!");
+        reset();
+    }
+}
+
+function reset() {
+    player.x = 50; player.y = 200;
+    player.vx = 0; player.vy = 0;
+    deaths++;
+    deathDisplay.innerText = deaths;
+}
+
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Draw Goal
+    ctx.fillStyle = '#0f0';
+    ctx.fillRect(goal.x, goal.y, goal.width, goal.height);
+
+    // Draw Player
+    ctx.fillStyle = '#0af';
+    ctx.fillRect(player.x, player.y, player.size, player.size);
+
+    // Draw Enemies
+    ctx.fillStyle = '#f00';
+    obstacles.forEach(obs => {
+        ctx.beginPath();
+        ctx.arc(obs.x, obs.y, obs.size, 0, Math.PI * 2);
+        ctx.fill();
+    });
+
+    update();
+    requestAnimationFrame(draw);
+}
+
+draw();
+</script>
+</body>
+</html>
