@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Quantum Loop</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #000;
+            margin: 0;
+            color: #fff;
+            font-family: sans-serif;
+            flex-direction: column;
+        }
+        canvas {
+            background-color: #111;
+            border: 2px solid #fff;
+        }
+        #game-info {
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+        #instructions {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #aaa;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-info">Status: Navigate and Find the Fleeting Yellow Dot</div>
+    <canvas id="gameCanvas" width="600" height="400"></canvas>
+    <div id="instructions">Use arrow keys (Up, Down, Left, Right) to move. The win dot appears for one frame only!</div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const infoDiv = document.getElementById('game-info');
+
+        const player = {
+            x: 50,
+            y: 50,
+            size: 15,
+            speed: 5,
+            color: '#ff0000' // Red cube
+        };
+
+        const obstacles = [];
+        const OBSTACLE_COUNT = 30;
+        const OBSTACLE_SIZE = 10;
+
+        let winDot = {
+            x: -100,
+            y: -100,
+            size: 5,
+            color: '#ffff00', // Yellow dot
+            visible: false
+        };
+
+        let score = 0;
+        let frameCount = 0;
+        const DOT_VISIBILITY_INTERVAL = 180; // Roughly 3 seconds at 60fps
+
+        // Input handling
+        const keys = {};
+        document.addEventListener('keydown', (e) => keys[e.key] = true);
+        document.addEventListener('keyup', (e) => keys[e.key] = false);
+
+        // Initialize obstacles
+        function initObstacles() {
+            for (let i = 0; i < OBSTACLE_COUNT; i++) {
+                obstacles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    vx: (Math.random() - 0.5) * 2,
+                    vy: (Math.random() - 0.5) * 2,
+                    size: OBSTACLE_SIZE,
+                    color: '#0000ff' // Blue circles
+                });
+            }
+        }
+
+        // Update game state
+        function update() {
+            // Player movement
+            if (keys['ArrowUp']) player.y -= player.speed;
+            if (keys['ArrowDown']) player.y += player.speed;
+            if (keys['ArrowLeft']) player.x -= player.speed;
+            if (keys['ArrowRight']) player.x += player.speed;
+
+            // Constrain player to canvas
+            player.x = Math.max(player.size / 2, Math.min(canvas.width - player.size / 2, player.x));
+            player.y = Math.max(player.size / 2, Math.min(canvas.height - player.size / 2, player.y));
+
+            // Obstacle movement and collision with walls
+            obstacles.forEach(obs => {
+                obs.x += obs.vx;
+                obs.y += obs.vy;
+
+                if (obs.x < obs.size / 2 || obs.x > canvas.width - obs.size / 2) obs.vx *= -1;
+                if (obs.y < obs.size / 2 || obs.y > canvas.height - obs.size / 2) obs.vy *= -1;
+            });
+
+            // Win Dot logic (appears for one frame)
+            winDot.visible = false;
+            if (frameCount % DOT_VISIBILITY_INTERVAL === 0) {
+                winDot.x = Math.random() * (canvas.width - 20) + 10;
+                winDot.y = Math.random() * (canvas.height - 20) + 10;
+                winDot.visible = true;
+            }
+            frameCount++;
+
+            // Check collision with obstacles (insta-lose mechanic for fun)
+            for (const obs of obstacles) {
+                const dist = Math.hypot(player.x - obs.x, player.y - obs.y);
+                if (dist < (player.size / 2 + obs.size / 2) * 0.8) { // Slightly tighter collision for "fairness"
+                    gameOver();
+                    return;
+                }
+            }
+            
+            // Check collision with the fleeting dot
+            if (winDot.visible) {
+                const dist = Math.hypot(player.x - winDot.x, player.y - winDot.y);
+                if (dist < player.size / 2 + winDot.size / 2) {
+                    score++;
+                    infoDiv.textContent = `Status: Dot captured! Score: ${score}. Get ready for the next one...`;
+                    // Reset player to start for the next point
+                    player.x = 50;
+                    player.y = 50;
+                    winDot.visible = false; // Hide dot immediately after capture
+                }
+            }
+        }
+
+        // Draw everything
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw player (square)
+            ctx.fillStyle = player.color;
+            ctx.fillRect(player.x - player.size / 2, player.y - player.size / 2, player.size, player.size);
+
+            // Draw obstacles (circles)
+            obstacles.forEach(obs => {
+                ctx.fillStyle = obs.color;
+                ctx.beginPath();
+                ctx.arc(obs.x, obs.y, obs.size / 2, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // Draw win dot if visible
+            if (winDot.visible) {
+                ctx.fillStyle = winDot.color;
+                ctx.beginPath();
+                ctx.arc(winDot.x, winDot.y, winDot.size / 2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // Game over function
+        function gameOver() {
+            infoDiv.textContent = `Game Over! Final Score: ${score}. Press F5 to restart.`;
+            // Stop the game loop
+            requestAnimationFrame = () => {}; 
+        }
+
+        // Main game loop
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Start the game
+        initObstacles();
+        gameLoop();
+
+    </script>
+</body>
+</html>

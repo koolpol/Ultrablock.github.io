@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>QUANTUM PARADOX - IMPOSSIBLE</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #050505; font-family: 'Courier New', monospace; color: #0f0; }
+        canvas { display: block; cursor: none; }
+        #ui { position: absolute; top: 20px; left: 20px; pointer-events: none; }
+        #msg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 2em; text-align: center; display: none; }
+    </style>
+</head>
+<body>
+    <div id="ui">
+        <div>PARADOX STABILITY: <span id="stability">100%</span></div>
+        <div>VECTOR ATTEMPTS: <span id="attempts">0</span></div>
+    </div>
+    <div id="msg">PARADOX COLLAPSED<br><small>Click to reboot reality</small></div>
+    <canvas id="gameCanvas"></canvas>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const stabilityEl = document.getElementById('stability');
+    const attemptsEl = document.getElementById('attempts');
+    const msg = document.getElementById('msg');
+
+    let width, height, mouse = { x: 0, y: 0 }, target = { x: 100, y: 100 };
+    let stability = 100, attempts = 0, frameCount = 0, gameOver = false;
+    let particles = [];
+
+    function resize() {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+    }
+
+    window.addEventListener('resize', resize);
+    window.addEventListener('mousemove', e => {
+        // The "67" Paradox: Invert controls every 67 frames
+        if (Math.floor(frameCount / 67) % 2 === 0) {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+        } else {
+            mouse.x = width - e.clientX;
+            mouse.y = height - e.clientY;
+        }
+    });
+
+    window.addEventListener('mousedown', () => { if(gameOver) location.reload(); });
+
+    function update() {
+        if (gameOver) return;
+
+        frameCount++;
+        
+        // Quantum Evasion Logic: Target moves to the point furthest from cursor
+        const dx = mouse.x - target.x;
+        const dy = mouse.y - target.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist < 200) {
+            target.x = Math.random() * (width - 50) + 25;
+            target.y = Math.random() * (height - 50) + 25;
+            attempts++;
+            stability -= 1.5;
+        }
+
+        // Passive Decay
+        stability -= 0.02;
+        
+        if (stability <= 0) {
+            stability = 0;
+            gameOver = true;
+            msg.style.display = 'block';
+        }
+
+        stabilityEl.innerText = Math.max(0, stability).toFixed(2) + "%";
+        attemptsEl.innerText = attempts;
+    }
+
+    function draw() {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+        ctx.fillRect(0, 0, width, height);
+
+        // Draw Target (The "Goal")
+        ctx.strokeStyle = '#f00';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(target.x - 15, target.y - 15, 30, 30);
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = '#f00';
+
+        // Draw Player Cursor
+        ctx.fillStyle = '#0f0';
+        ctx.shadowColor = '#0f0';
+        ctx.beginPath();
+        ctx.arc(mouse.x, mouse.y, 5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Draw 67-Frame Glitch Effect
+        if (frameCount % 67 === 0) {
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, width, height);
+        }
+
+        requestAnimationFrame(() => {
+            update();
+            draw();
+        });
+    }
+
+    resize();
+    draw();
+</script>
+</body>
+</html>

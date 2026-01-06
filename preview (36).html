@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Steal a Brain Rot Plus</title>
+    <style>
+    body {
+    background-color: #333;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    color: white;
+    font-family: Arial, sans-serif;
+    flex-direction: column;
+}
+
+canvas {
+    background-color: #eee;
+    border: 2px solid #fff;
+}
+
+#ui-container {
+    margin-top: 10px;
+    text-align: center;
+}
+
+#messageArea {
+    font-size: 16px;
+    color: yellow;
+    margin-bottom: 10px;
+}
+
+#buyButton {
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Steal a Brain Rot Plus</h1>
+        <div class="stat">Money: $<span id="money">0</span></div>
+        <div class="stat">Brainrots Stolen (per click): <span id="brainrotPerClick">1</span></div>
+        <div class="stat">Auto Stealers (per second): <span id="autoStealers">0</span></div>
+        
+        <button onclick="stealBrainrot()">Steal Brainrot</button>
+        
+        <h2>Shop</h2>
+        <div class="shop-item">
+            <span>Buy Click Power Upgrade (Cost: $<span id="upgradeClickCost">10</span>)</span>
+            <button onclick="buyUpgradeClick()">Buy</button>
+        </div>
+        <div class="shop-item">
+            <span>Buy Auto Stealer (Cost: $<span id="buyAutoStealerCost">100</span>)</span>
+            <button onclick="buyAutoStealer()">Buy</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+const moneyDisplay = document.getElementById("moneyDisplay");
+const brainrotDisplay = document.getElementById("brainrotDisplay");
+const messageArea = document.getElementById("messageArea");
+const buyButton = document.getElementById("buyButton");
+
+canvas.width = 600;
+canvas.height = 400;
+
+let player = {
+    x: 50,
+    y: 50,
+    size: 20,
+    color: "blue",
+    speed: 5,
+    money: 0,
+    brainrotsStolen: 0,
+};
+
+let brainrots = [];
+const BRAINROT_VALUE = 10;
+const BRAINROT_BUY_COST = 100;
+
+// Shop area (left side of the canvas)
+const shopArea = {
+    x: 0,
+    y: 0,
+    width: 100,
+    height: canvas.height,
+    color: "#ccc"
+};
+
+// Function to spawn a new brainrot at a random, non-shop location
+function spawnBrainrot() {
+    let x, y;
+    do {
+        x = Math.random() * (canvas.width - 20) + 10;
+        y = Math.random() * (canvas.height - 20) + 10;
+    } while (x < shopArea.x + shopArea.width + 20); // Ensure not in shop area
+    
+    brainrots.push({
+        x: x,
+        y: y,
+        radius: 10,
+        color: "red"
+    });
+}
+
+// Initial brainrots
+for (let i = 0; i < 5; i++) {
+    spawnBrainrot();
+}
+
+// Handle player movement
+let keys = {
+    up: false,
+    down: false,
+    left: false,
+    right: false
+};
+
+document.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowUp" || e.key === "w") keys.up = true;
+    if (e.key === "ArrowDown" || e.key === "s") keys.down = true;
+    if (e.key === "ArrowLeft" || e.key === "a") keys.left = true;
+    if (e.key === "ArrowRight" || e.key === "d") keys.right = true;
+});
+
+document.addEventListener("keyup", (e) => {
+    if (e.key === "ArrowUp" || e.key === "w") keys.up = false;
+    if (e.key === "ArrowDown" || e.key === "s") keys.down = false;
+    if (e.key === "ArrowLeft" || e.key === "a") keys.left = false;
+    if (e.key === "ArrowRight" || e.key === "d") keys.right = false;
+});
+
+function updatePlayerPosition() {
+    if (keys.up) player.y -= player.speed;
+    if (keys.down) player.y += player.speed;
+    if (keys.left) player.x -= player.speed;
+    if (keys.right) player.x += player.speed;
+
+    // Keep player within canvas bounds
+    player.x = Math.max(0, Math.min(canvas.width - player.size, player.x));
+    player.y = Math.max(0, Math.min(canvas.height - player.size, player.y));
+}
+
+// Handle collection and buying
+function checkCollisionsAndShop() {
+    // Check for brainrot collection
+    for (let i = brainrots.length - 1; i >= 0; i--) {
+        const b = brainrots[i];
+        // Simple AABB collision detection for player square and brainrot circle proximity
+        const distance = Math.sqrt(Math.pow(player.x + player.size / 2 - b.x, 2) + Math.pow(player.y + player.size / 2 - b.y, 2));
+        if (distance < player.size / 2 + b.radius) {
+            player.money += BRAINROT_VALUE;
+            player.brainrotsStolen++;
+            brainrots.splice(i, 1); // Remove collected brainrot
+            messageArea.textContent = `Stole a brainrot for $${BRAINROT_VALUE}!`;
+        }
+    }
+
+    // Check if in the shop area
+    if (player.x < shopArea.x + shopArea.width &&
+        player.x + player.size > shopArea.x &&
+        player.y < shopArea.y + shopArea.height &&
+        player.y + player.size > shopArea.y) {
+        
+        buyButton.style.display = "inline-block";
+        if (player.money >= BRAINROT_BUY_COST) {
+            messageArea.textContent = `In shop. You can buy more brainrots for $${BRAINROT_BUY_COST}!`;
+            buyButton.disabled = false;
+        } else {
+            messageArea.textContent = `In shop. Need $${BRAINROT_BUY_COST} to buy more brainrots.`;
+            buyButton.disabled = true;
+        }
+    } else {
+        buyButton.style.display = "none";
+        // Reset default message if no collection message is active
+        if (!messageArea.textContent.includes("Stole a brainrot")) {
+             messageArea.textContent = "Move with WASD or arrow keys. Steal brainrots (circles)!";
+        }
+    }
+}
+
+// Buy functionality
+buyButton.addEventListener("click", () => {
+    if (player.money >= BRAINROT_BUY_COST) {
+        player.money -= BRAINROT_BUY_COST;
+        // Add 5 new brainrots to the game
+        for (let i = 0; i < 5; i++) {
+            spawnBrainrot();
+        }
+        messageArea.textContent = `Bought 5 brainrots for $${BRAINROT_BUY_COST}!`;
+    }
+});
+
+
+// Drawing functions
+function drawPlayer() {
+    ctx.fillStyle = player.color;
+    ctx.fillRect(player.x, player.y, player.size, player.size);
+}
+
+function drawBrainrots() {
+    brainrots.forEach(b => {
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
+        ctx.fillStyle = b.color;
+        ctx.fill();
+        ctx.closePath();
+    });
+}
+
+function drawShop() {
+    ctx.fillStyle = shopArea.color;
+    ctx.fillRect(shopArea.x, shopArea.y, shopArea.width, shopArea.height);
+    ctx.fillStyle = "black";
+    ctx.fillText("SHOP", shopArea.x + 10, shopArea.y + 20);
+}
+
+function updateUI() {
+    moneyDisplay.textContent = player.money;
+    brainrotDisplay.textContent = player.brainrotsStolen;
+}
+
+// Game loop
+function gameLoop() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas
+
+    drawShop();
+    updatePlayerPosition();
+    checkCollisionsAndShop();
+    drawBrainrots();
+    drawPlayer();
+    updateUI();
+    
+    requestAnimationFrame(gameLoop); // Loop the game
+}
+
+gameLoop(); // Start the game
+
+    </script>
+</body>
+</html>

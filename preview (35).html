@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>BRAIN-ROT GARDEN v2026</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #000; color: #0f0; font-family: 'Courier New', monospace; }
+        canvas { filter: hue-rotate(90deg) blur(0.4px); contrast(150%); }
+        #brain-status { position: absolute; top: 10px; left: 10px; pointer-events: none; text-shadow: 0 0 5px #0f0; }
+    </style>
+</head>
+<body>
+    <div id="brain-status">BRAIN CELLS REMAINING: <span id="count">100</span>%</div>
+    <canvas id="garden"></canvas>
+
+<script>
+/**
+ * IMPOSSIBLE GARDEN LOGIC: 
+ * Uses an "Anti-Pattern Seed" to generate structures that shouldn't render.
+ */
+const canvas = document.getElementById('garden');
+const ctx = canvas.getContext('2d');
+const counter = document.getElementById('count');
+
+let brainRotLevel = 0;
+let plants = [];
+
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+class RizzPlant {
+    constructor(x) {
+        this.x = x;
+        this.y = canvas.height;
+        this.height = 0;
+        this.maxHeight = Math.random() * 300 + 100;
+        this.color = `hsl(${Math.random() * 360}, 100%, 50%)`;
+        this.dna = Math.random().toString(36).substring(7); // Viral DNA
+        this.segments = [];
+    }
+
+    grow() {
+        if (this.height < this.maxHeight) {
+            this.height += 2;
+            this.segments.push({
+                x: this.x + Math.sin(this.height * 0.1) * 10,
+                y: canvas.height - this.height
+            });
+            brainRotLevel += 0.01;
+        }
+    }
+
+    draw() {
+        ctx.beginPath();
+        ctx.strokeStyle = this.color;
+        ctx.lineWidth = 5;
+        ctx.moveTo(this.x, canvas.height);
+        this.segments.forEach(s => ctx.lineTo(s.x, s.y));
+        ctx.stroke();
+        
+        // Render Brain-Rot Text as "Fruit"
+        if (this.height >= this.maxHeight && Math.random() > 0.98) {
+            ctx.fillStyle = "#fff";
+            ctx.fillText(this.dna === "rizz" ? "GYATT" : "OHIO", this.segments[this.segments.length-1].x, this.segments[this.segments.length-1].y);
+        }
+    }
+}
+
+function brainHarvest() {
+    // Impossible recursion: The function rewrites its own interval 
+    // to speed up as your "brain" rots.
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    if (Math.random() > 0.95) plants.push(new RizzPlant(Math.random() * canvas.width));
+
+    plants.forEach(p => {
+        p.grow();
+        p.draw();
+    });
+
+    const brainCells = Math.max(0, 100 - Math.floor(brainRotLevel));
+    counter.innerText = brainCells;
+    
+    if (brainCells > 0) {
+        requestAnimationFrame(brainHarvest);
+    } else {
+        // Ultimate Brain Rot: The Screen Melts
+        ctx.fillStyle = "white";
+        ctx.font = "40px Impact";
+        ctx.fillText("BRAIN FULLY ROTTED: NO THOUGHTS, ONLY GARDEN", 50, canvas.height/2);
+        document.body.style.filter = "invert(1) rotate(180deg)";
+    }
+}
+
+// Start the impossible cycle
+brainHarvest();
+
+// Interactive "Steal": Click to steal a brain cell and plant it
+window.addEventListener('mousedown', (e) => {
+    for(let i=0; i<5; i++) {
+        plants.push(new RizzPlant(e.clientX + (Math.random()*50 - 25)));
+    }
+    brainRotLevel += 5; // Stealing the brain speeds up the rot
+});
+</script>
+</body>
+</html>

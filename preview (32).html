@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>THE QUANTUM GLITCH</title>
+    <style>
+        body { margin: 0; background: #000; overflow: hidden; color: #0f0; font-family: 'Courier New', Courier, monospace; }
+        canvas { display: block; filter: contrast(150%) brightness(120%); }
+        #ui { position: absolute; top: 20px; left: 20px; pointer-events: none; }
+        #msg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 2rem; text-align: center; display: none; }
+    </style>
+</head>
+<body>
+    <div id="ui">
+        SCORE: <span id="score">0</span><br>
+        STABILITY: <span id="stable">100%</span>
+    </div>
+    <div id="msg">SYSTEM FAILURE<br><small>REALITY COLLAPSED</small><br><br>PRESS R TO REBOOT</div>
+    <canvas id="gameCanvas"></canvas>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const scoreEl = document.getElementById('score');
+const stableEl = document.getElementById('stable');
+const msg = document.getElementById('msg');
+
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+let score = 0;
+let stability = 100;
+let gameOver = false;
+let frame = 0;
+let invertControls = false;
+
+const player = {
+    x: canvas.width / 2,
+    y: canvas.height / 2,
+    size: 10,
+    speed: 6
+};
+
+const keys = {};
+window.addEventListener('keydown', e => {
+    keys[e.key.toLowerCase()] = true;
+    if (e.key === 'r' && gameOver) location.reload();
+});
+window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
+
+// Objects that actively try to break the JS event loop
+let anomalies = [];
+class Anomaly {
+    constructor() {
+        this.reset();
+    }
+    reset() {
+        this.x = Math.random() * canvas.width;
+        this.y = Math.random() * canvas.height;
+        this.vx = (Math.random() - 0.5) * 15;
+        this.vy = (Math.random() - 0.5) * 15;
+        this.size = Math.random() * 50 + 20;
+        this.color = `hsl(${Math.random() * 360}, 100%, 50%)`;
+    }
+    update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        if (this.x < 0 || this.x > canvas.width) this.vx *= -1;
+        if (this.y < 0 || this.y > canvas.height) this.vy *= -1;
+
+        // Collision detection
+        let dx = this.x - player.x;
+        let dy = this.y - player.y;
+        let distance = Math.sqrt(dx * dx + dy * dy);
+        if (distance < this.size / 2 + player.size) {
+            stability -= 1.5;
+        }
+    }
+    draw() {
+        ctx.strokeStyle = this.color;
+        ctx.lineWidth = 2;
+        ctx.strokeRect(this.x - this.size/2, this.y - this.size/2, this.size, this.size);
+    }
+}
+
+function spawnAnomaly() {
+    if (anomalies.length < 50) anomalies.push(new Anomaly());
+}
+
+setInterval(() => {
+    invertControls = !invertControls;
+    if(!gameOver) score += 10;
+}, 5000);
+
+function update() {
+    if (stability <= 0) {
+        gameOver = true;
+        msg.style.display = 'block';
+        return;
+    }
+
+    // Input Logic with "Hard" twist
+    let moveX = 0;
+    let moveY = 0;
+    if (keys['w'] || keys['arrowup']) moveY = invertControls ? 1 : -1;
+    if (keys['s'] || keys['arrowdown']) moveY = invertControls ? -1 : 1;
+    if (keys['a'] || keys['arrowleft']) moveX = invertControls ? 1 : -1;
+    if (keys['d'] || keys['arrowright']) moveX = invertControls ? -1 : 1;
+
+    player.x += moveX * player.speed;
+    player.y += moveY * player.speed;
+
+    // Boundary check
+    player.x = Math.max(0, Math.min(canvas.width, player.x));
+    player.y = Math.max(0, Math.min(canvas.height, player.y));
+
+    if (frame % 30 === 0) spawnAnomaly();
+    anomalies.forEach(a => a.update());
+    
+    score++;
+    frame++;
+    scoreEl.innerText = score;
+    stableEl.innerText = Math.max(0, Math.floor(stability)) + "%";
+    stableEl.style.color = stability < 30 ? '#f00' : '#0f0';
+}
+
+function draw() {
+    // Motion Blur Effect
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Draw Player
+    ctx.fillStyle = invertControls ? '#f0f' : '#0f0';
+    ctx.fillRect(player.x - 5, player.y - 5, 10, 10);
+
+    // Draw Hazards
+    anomalies.forEach(a => a.draw());
+
+    // Glitch Effect
+    if (Math.random() > 0.95) {
+        ctx.fillStyle = "rgba(255,255,255,0.1)";
+        ctx.fillRect(Math.random()*canvas.width, 0, 20, canvas.height);
+    }
+}
+
+function loop() {
+    update();
+    draw();
+    if (!gameOver) requestAnimationFrame(loop);
+}
+
+loop();
+</script>
+</body>
+</html>
