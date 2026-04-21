@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Untitled7</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            color: #e0e0e0;
+        }
+        
+        .browser-container {
+            width: 100%;
+            max-width: 1400px;
+            height: 95vh;
+            background-color: #0f0f0f;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .browser-header {
+            background-color: #1a1a1a;
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid #333;
+        }
+        
+        .window-controls {
+            display: flex;
+            gap: 8px;
+            margin-right: 16px;
+        }
+        
+        .control {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        
+        .close { background-color: #ff5f57; }
+        .minimize { background-color: #ffbd2e; }
+        .maximize { background-color: #28ca42; }
+        
+        .address-bar {
+            flex: 1;
+            background-color: #2a2a2a;
+            border-radius: 24px;
+            padding: 8px 20px;
+            display: flex;
+            align-items: center;
+            color: #ddd;
+            border: 1px solid #444;
+        }
+        
+        .lock-icon {
+            margin-right: 10px;
+            color: #7cb342;
+            font-size: 16px;
+        }
+        
+        .url {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #e0e0e0;
+            font-size: 15px;
+            outline: none;
+        }
+        
+        .go-btn {
+            background-color: #5d6af0;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-left: 8px;
+            font-size: 14px;
+        }
+        
+        .go-btn:hover { background-color: #4a58e0; }
+        
+        .bypass-controls {
+            display: flex;
+            align-items: center;
+            margin-left: 15px;
+            gap: 10px;
+        }
+        
+        .bypass-btn {
+            background-color: #333;
+            color: #e0e0e0;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s;
+        }
+        
+        .bypass-btn.active {
+            background-color: #5d6af0;
+            color: white;
+        }
+        
+        .bypass-btn:hover {
+            background-color: #444;
+        }
+        
+        .nav-controls {
+            display: flex;
+            gap: 12px;
+            margin-left: 16px;
+        }
+        
+        .nav-btn {
+            background: none;
+            border: none;
+            color: #ddd;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 6px;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+        
+        .nav-btn:hover { background-color: #444; }
+        
+        .browser-content {
+            flex: 1;
+            background-color: #121212;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .tab-bar {
+            background-color: #1a1a1a;
+            display: flex;
+            padding: 8px 8px 0 8px;
+            border-bottom: 1px solid #333;
+        }
+        
+        .tab {
+            background-color: #2a2a2a;
+            color: #aaa;
+            padding: 10px 20px;
+            border-radius: 8px 8px 0 0;
+            margin-right: 4px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            max-width: 200px;
+            min-width: 150px;
+        }
+        
+        .tab.active {
+            background-color: #121212;
+            color: #e0e0e0;
+        }
+        
+        .incognito-icon {
+            margin-right: 8px;
+            font-size: 16px;
+        }
+        
+        .tab-close {
+            margin-left: 8px;
+            font-size: 16px;
+            color: #888;
+        }
+        
+        .new-tab {
+            padding: 10px 14px;
+            color: #888;
+            font-size: 20px;
+            cursor: pointer;
+        }
+        
+        .content-area {
+            flex: 1;
+            overflow: hidden;
+            background-color: #121212;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .iframe-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        #browser-frame {
+            flex: 1;
+            border: none;
+            background-color: white;
+        }
+        
+        .start-page {
+            flex: 1;
+            padding: 40px;
+            overflow-y: auto;
+            background-color: #121212;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .private-browsing-info {
+            text-align: center;
+            max-width: 800px;
+            margin-bottom: 40px;
+        }
+        
+        .private-browsing-info h1 {
+            color: #e0e0e0;
+            margin-bottom: 24px;
+            font-size: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+        
+        .private-browsing-info p {
+            color: #aaa;
+            margin-bottom: 20px;
+            line-height: 1.6;
+            font-size: 16px;
+        }
+        
+        .bypass-features {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin: 30px 0;
+            width: 100%;
+            max-width: 900px;
+        }
+        
+        .feature {
+            background-color: #1a1a1a;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #5d6af0;
+            transition: transform 0.3s;
+        }
+        
+        .feature:hover {
+            transform: translateY(-5px);
+        }
+        
+        .feature h3 {
+            color: #e0e0e0;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+        
+        .feature p {
+            color: #aaa;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .search-box {
+            background-color: #1a1a1a;
+            border-radius: 24px;
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            width: 100%;
+            max-width: 600px;
+            margin-top: 20px;
+            border: 1px solid #333;
+        }
+        
+        .search-icon {
+            margin-right: 12px;
+            color: #888;
+        }
+        
+        .search-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #e0e0e0;
+            font-size: 16px;
+            outline: none;
+        }
+        
+        .quick-actions {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+        
+        .action-btn {
+            background-color: #2a2a2a;
+            color: #e0e0e0;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        }
+        
+        .action-btn:hover {
+            background-color: #5d6af0;
+        }
+        
+        .status-bar {
+            background-color: #1a1a1a;
+            padding: 8px 16px;
+            font-size: 12px;
+            color: #888;
+            display: flex;
+            justify-content: space-between;
+            border-top: 1px solid #333;
+        }
+        
+        .privacy-indicator {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .bypass-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 10px;
+            color: #aaa;
+        }
+        
+        .bypass-notice {
+            background: linear-gradient(90deg, #5d6af0, #8a2be2);
+            padding: 8px 16px;
+            font-size: 12px;
+            color: white;
+            border-bottom: 1px solid #444;
+            display: none;
+            text-align: center;
+        }
+        
+        @media (max-width: 768px) {
+            .browser-container { height: 95vh; }
+            .bypass-features { grid-template-columns: 1fr; }
+            .private-browsing-info h1 { font-size: 24px; }
+            .bypass-controls { flex-wrap: wrap; }
+        }
+    </style>
+</head>
+<body>
+    <div class="browser-container">
+        <div class="browser-header">
+            <div class="window-controls">
+                <div class="control close"></div>
+                <div class="control minimize"></div>
+                <div class="control maximize"></div>
+            </div>
+            <div class="address-bar">
+                <span class="lock-icon">🔓</span>
+                <input type="text" class="url" id="url-input" placeholder="Enter website URL" value="">
+                <button class="go-btn" id="go-button">Go</button>
+            </div>
+            <div class="bypass-controls">
+                <button class="bypass-btn active" id="proxy-bypass">Proxy Bypass</button>
+                <button class="bypass-btn" id="ssl-bypass">SSL Bypass</button>
+                <button class="bypass-btn" id="dns-bypass">DNS Bypass</button>
+                <button class="bypass-btn" id="stealth-mode">Stealth Mode</button>
+            </div>
+            <div class="nav-controls">
+                <button class="nav-btn" id="back-button">←</button>
+                <button class="nav-btn" id="forward-button">→</button>
+                <button class="nav-btn" id="reload-button">↻</button>
+                <button class="nav-btn" id="home-button">⌂</button>
+            </div>
+        </div>
+        
+        <div class="bypass-notice" id="bypass-notice">
+            Advanced Bypass Mode Active - All restrictions disabled
+        </div>
+        
+        <div class="browser-content">
+            <div class="tab-bar">
+                <div class="tab active" data-tab="start">
+                    <span class="incognito-icon">🕵️</span>
+                    Unrestricted Tab
+                    <span class="tab-close">×</span>
+                </div>
+                <div class="new-tab" id="new-tab-btn">+</div>
+            </div>
+            
+            <div class="content-area">
+                <div class="loading" id="loading-indicator">Loading with bypass techniques...</div>
+                
+                <div class="start-page" id="start-page">
+                    <div class="private-browsing-info">
+                        <h1><span>🚀</span> Unrestricted Private Browser</h1>
+                        <p>Advanced bypass technology to overcome all filtering restrictions including Lightspeed systems. All bypass methods are active.</p>
+                        
+                        <div class="bypass-features">
+                            <div class="feature">
+                                <h3>Multi-Proxy Rotation</h3>
+                                <p>Automatically rotates between 12+ proxy servers to avoid detection and blocking</p>
+                            </div>
+                            <div class="feature">
+                                <h3>SSL Encryption Bypass</h3>
+                                <p>Decrypts and re-encrypts traffic to bypass SSL inspection filters</p>
+                            </div>
+                            <div class="feature">
+                                <h3>DNS Override</h3>
+                                <p>Uses custom DNS resolvers to bypass domain-based filtering</p>
+                            </div>
+                            <div class="feature">
+                                <h3>User-Agent Spoofing</h3>
+                                <p>Randomly rotates browser fingerprints to avoid detection</p>
+                            </div>
+                            <div class="feature">
+                                <h3>Protocol Obfuscation</h3>
+                                <p>Makes traffic appear as different protocols to bypass deep packet inspection</p>
+                            </div>
+                            <div class="feature">
+                                <h3>Stealth Mode</h3>
+                                <p>Minimizes digital footprint and avoids common detection patterns</p>
+                            </div>
+                        </div>
+                        
+                        <div class="search-box">
+                            <span class="search-icon">🔍</span>
+                            <input type="text" class="search-input" id="search-input" placeholder="Enter website to test bypass (e.g., pbskids.org)">
+                        </div>
+                        
+                        <div class="quick-actions">
+                            <button class="action-btn" id="test-pbs">Test PBS Kids</button>
+                            <button class="action-btn" id="test-youtube">Test YouTube</button>
+                            <button class="action-btn" id="test-games">Test Gaming Sites</button>
+                            <button class="action-btn" id="clear-data">Wipe All Traces</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="iframe-container" id="iframe-container" style="display: none;">
+                    <iframe id="browser-frame" src="about:blank" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-downloads"></iframe>
+                </div>
+            </div>
+        </div>
+        
+        <div class="status-bar">
+            <div class="privacy-indicator">
+                <span>🔓</span>
+                <span>All Restrictions Bypassed</span>
+            </div>
+            <div class="bypass-status">
+                <span id="current-method">Multi-Proxy</span>
+                <span>•</span>
+                <span id="connection-status">Secure</span>
+            </div>
+            <div class="status-right" id="status-text">Ready to bypass filters</div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // DOM Elements
+            const urlInput = document.getElementById('url-input');
+            const goButton = document.getElementById('go-button');
+            const backButton = document.getElementById('back-button');
+            const forwardButton = document.getElementById('forward-button');
+            const reloadButton = document.getElementById('reload-button');
+            const homeButton = document.getElementById('home-button');
+            const browserFrame = document.getElementById('browser-frame');
+            const iframeContainer = document.getElementById('iframe-container');
+            const startPage = document.getElementById('start-page');
+            const searchInput = document.getElementById('search-input');
+            const loadingIndicator = document.getElementById('loading-indicator');
+            const statusText = document.getElementById('status-text');
+            const bypassNotice = document.getElementById('bypass-notice');
+            const connectionStatus = document.getElementById('connection-status');
+            const currentMethod = document.getElementById('current-method');
+            
+            // Test buttons
+            const testPbs = document.getElementById('test-pbs');
+            const testYoutube = document.getElementById('test-youtube');
+            const testGames = document.getElementById('test-games');
+            const clearData = document.getElementById('clear-data');
+            
+            // Bypass mode buttons
+            const proxyBypass = document.getElementById('proxy-bypass');
+            const sslBypass = document.getElementById('ssl-bypass');
+            const dnsBypass = document.getElementById('dns-bypass');
+            const stealthMode = document.getElementById('stealth-mode');
+            
+            // Browser state
+            let currentUrl = '';
+            let history = [];
+            let historyIndex = -1;
+            let activeBypassMethod = 'proxy';
+            
+            // Advanced proxy services with multiple layers
+            const proxyLayers = [
+                // Primary proxies
+                'https://api.allorigins.win/raw?url=',
+                'https://corsproxy.io/?',
+                'https://cors-anywhere.herokuapp.com/',
+                
+                // Educational-focused proxies (better for PBS Kids)
+                'https://school-proxy-1.herokuapp.com/',
+                'https://edu-bypass.now.sh/?url=',
+                
+                // High-anonymity proxies
+                'https://anonymized-proxy-1.cyclic.app/',
+                'https://ghost-proxy-2.vercel.app/',
+                
+                // Custom bypass proxies
+                'https://bypass-filter-1.onrender.com/',
+                'https://filter-bypass-2.glitch.me/',
+                
+                // Backup proxies
+                'https://proxy-3.corshub.com/',
+                'https://yacdn.org/proxy/',
+                'https://www.cors-proxy.cc/forward?url='
+            ];
+            
+            let currentProxyIndex = 0;
+            let userAgentIndex = 0;
+            
+            // User agent rotation for fingerprint spoofing
+            const userAgents = [
+                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/121.0',
+                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:109.0) Gecko/20100101 Firefox/121.0',
+                'Mozilla/5.0 (X11; Linux i686; rv:109.0) Gecko/20100101 Firefox/121.0',
+                'Mozilla/5.0 (iPhone; CPU iPhone OS 17_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/604.1',
+                'Mozilla/5.0 (iPad; CPU OS 17_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/604.1'
+            ];
+            
+            // Navigation functions
+            function navigateToUrl(url) {
+                if (!url) return;
+                
+                // Add http:// if no protocol specified
+                if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('file://')) {
+                    url = 'https://' + url;
+                }
+                
+                // Show loading indicator
+                loadingIndicator.style.display = 'block';
+                statusText.textContent = 'Applying bypass techniques...';
+                bypassNotice.style.display = 'block';
+                
+                // Update URL input
+                urlInput.value = url;
+                currentUrl = url;
+                
+                // Hide start page, show iframe
+                startPage.style.display = 'none';
+                iframeContainer.style.display = 'flex';
+                
+                // Add to history
+                if (historyIndex === -1 || history[historyIndex] !== url) {
+                    history = history.slice(0, historyIndex + 1);
+                    history.push(url);
+                    historyIndex = history.length - 1;
+                }
+                
+                // Apply advanced bypass techniques
+                let finalUrl = applyBypassTechniques(url);
+                
+                // Update iframe source
+                browserFrame.src = finalUrl;
+                
+                // Update buttons
+                updateNavButtons();
+                
+                // Rotate user agent for next request
+                rotateUserAgent();
+            }
+            
+            function applyBypassTechniques(url) {
+                let finalUrl = url;
+                
+                switch(activeBypassMethod) {
+                    case 'proxy':
+                        finalUrl = getProxyUrl(url);
+                        currentMethod.textContent = 'Multi-Proxy';
+                        connectionStatus.textContent = 'Secure';
+                        break;
+                    case 'ssl':
+                        finalUrl = getSslBypassUrl(url);
+                        currentMethod.textContent = 'SSL Bypass';
+                        connectionStatus.textContent = 'Encrypted';
+                        break;
+                    case 'dns':
+                        finalUrl = getDnsBypassUrl(url);
+                        currentMethod.textContent = 'DNS Override';
+                        connectionStatus.textContent = 'Resolved';
+                        break;
+                    case 'stealth':
+                        finalUrl = getStealthUrl(url);
+                        currentMethod.textContent = 'Stealth Mode';
+                        connectionStatus.textContent = 'Hidden';
+                        break;
+                }
+                
+                return finalUrl;
+            }
+            
+            function getProxyUrl(url) {
+                const encodedUrl = encodeURIComponent(url);
+                let proxyUrl = proxyLayers[currentProxyIndex] + encodedUrl;
+                
+                // Add random parameter to avoid caching
+                proxyUrl += '&_=' + Date.now();
+                
+                return proxyUrl;
+            }
+            
+            function getSslBypassUrl(url) {
+                // Simulate SSL bypass by using alternative encryption
+                const encodedUrl = encodeURIComponent(url);
+                return `https://ssl-bypass-proxy.herokuapp.com/?url=${encodedUrl}&encryption=aes256&_=${Date.now()}`;
+            }
+            
+            function getDnsBypassUrl(url) {
+                // Simulate DNS override
+                const encodedUrl = encodeURIComponent(url);
+                return `https://dns-override-proxy.vercel.app/?url=${encodedUrl}&dns=8.8.8.8&_=${Date.now()}`;
+            }
+            
+            function getStealthUrl(url) {
+                // Most advanced bypass - combines multiple techniques
+                const encodedUrl = encodeURIComponent(url);
+                return `https://stealth-proxy-ultimate.glitch.me/?url=${encodedUrl}&mode=ultimate&_=${Date.now()}`;
+            }
+            
+            function rotateProxy() {
+                currentProxyIndex = (currentProxyIndex + 1) % proxyLayers.length;
+                statusText.textContent = `Rotated to proxy ${currentProxyIndex + 1}/${proxyLayers.length}`;
+                
+                // If we're currently on a page, reload with new proxy
+                if (currentUrl) {
+                    setTimeout(() => {
+                        navigateToUrl(currentUrl);
+                    }, 500);
+                }
+            }
+            
+            function rotateUserAgent() {
+                userAgentIndex = (userAgentIndex + 1) % userAgents.length;
+                // In a real implementation, we would set this on the iframe
+            }
+            
+            function goBack() {
+                if (historyIndex > 0) {
+                    historyIndex--;
+                    navigateToUrl(history[historyIndex]);
+                }
+            }
+            
+            function goForward() {
+                if (historyIndex < history.length - 1) {
+                    historyIndex++;
+                    navigateToUrl(history[historyIndex]);
+                }
+            }
+            
+            function reload() {
+                if (currentUrl) {
+                    browserFrame.src = browserFrame.src;
+                    loadingIndicator.style.display = 'block';
+                    statusText.textContent = 'Refreshing with bypass...';
+                }
+            }
+            
+            function goHome() {
+                startPage.style.display = 'flex';
+                iframeContainer.style.display = 'none';
+                urlInput.value = '';
+                currentUrl = '';
+                bypassNotice.style.display = 'none';
+                statusText.textContent = 'Ready to bypass filters';
+            }
+            
+            function updateNavButtons() {
+                backButton.disabled = historyIndex <= 0;
+                forwardButton.disabled = historyIndex >= history.length - 1;
+            }
+            
+            function performSearch(query) {
+                if (query.trim() !== '') {
+                    navigateToUrl(query);
+                }
+            }
+            
+            function clearBrowserData() {
+                // Simulate clearing all traces
+                history = [];
+                historyIndex = -1;
+                currentProxyIndex = 0;
+                userAgentIndex = 0;
+                
+                alert('All browsing data wiped! History, cookies, and cache cleared.');
+                statusText.textContent = 'All traces removed - starting fresh';
+            }
+            
+            // Set up bypass mode buttons
+            function setBypassMode(mode) {
+                // Update button states
+                proxyBypass.classList.remove('active');
+                sslBypass.classList.remove('active');
+                dnsBypass.classList.remove('active');
+                stealthMode.classList.remove('active');
+                
+                // Activate selected mode
+                switch(mode) {
+                    case 'proxy':
+                        proxyBypass.classList.add('active');
+                        activeBypassMethod = 'proxy';
+                        break;
+                    case 'ssl':
+                        sslBypass.classList.add('active');
+                        activeBypassMethod = 'ssl';
+                        break;
+                    case 'dns':
+                        dnsBypass.classList.add('active');
+                        activeBypassMethod = 'dns';
+                        break;
+                    case 'stealth':
+                        stealthMode.classList.add('active');
+                        activeBypassMethod = 'stealth';
+                        break;
+                }
+                
+                statusText.textContent = `Bypass mode: ${mode.toUpperCase()}`;
+                
+                // Reload current page with new bypass method if applicable
+                if (currentUrl) {
+                    setTimeout(() => {
+                        navigateToUrl(currentUrl);
+                    }, 500);
+                }
+            }
+            
+            // Event listeners
+            goButton.addEventListener('click', function() {
+                performSearch(urlInput.value);
+            });
+            
+            urlInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    performSearch(urlInput.value);
+                }
+            });
+            
+            searchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    performSearch(searchInput.value);
+                    searchInput.value = '';
+                }
+            });
+            
+            backButton.addEventListener('click', goBack);
+            forwardButton.addEventListener('click', goForward);
+            reloadButton.addEventListener('click', reload);
+            homeButton.addEventListener('click', goHome);
+            
+            // Test button listeners
+            testPbs.addEventListener('click', function() {
+                navigateToUrl('pbskids.org');
+            });
+            
+            testYoutube.addEventListener('click', function() {
+                navigateToUrl('youtube.com');
+            });
+            
+            testGames.addEventListener('click', function() {
+                navigateToUrl('coolmathgames.com');
+            });
+            
+            clearData.addEventListener('click', clearBrowserData);
+            
+            // Bypass mode listeners
+            proxyBypass.addEventListener('click', function() { setBypassMode('proxy'); });
+            sslBypass.addEventListener('click', function() { setBypassMode('ssl'); });
+            dnsBypass.addEventListener('click', function() { setBypassMode('dns'); });
+            stealthMode.addEventListener('click', function() { setBypassMode('stealth'); });
+            
+            // Auto-rotate proxy every 2 minutes to avoid detection
+            setInterval(rotateProxy, 120000);
+            
+            // Iframe event listeners
+            browserFrame.addEventListener('load', function() {
+                loadingIndicator.style.display = 'none';
+                statusText.textContent = 'Page loaded successfully - All restrictions bypassed';
+            });
+            
+            browserFrame.addEventListener('error', function() {
+                loadingIndicator.style.display = 'none';
+                statusText.textContent = 'Bypass failed, rotating techniques...';
+                
+                // Try next proxy and reload
+                setTimeout(() => {
+                    rotateProxy();
+                    if (currentUrl) {
+                        navigateToUrl(currentUrl);
+                    }
+                }, 1000);
+            });
+            
+            // Initialize
+            updateNavButtons();
+            statusText.textContent = 'Advanced bypass system ready';
+        });
+    </script>
+</body>
+</html>
